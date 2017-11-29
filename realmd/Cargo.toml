@@ -1,0 +1,6 @@
+[package]
+name = "realmd"
+version = "0.1.0"
+authors = ["Tripp Hill <thill@messerfinancial.com>"]
+
+[dependencies]
