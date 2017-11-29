@@ -1,7 +1,7 @@
 [package]
 name = "realmd"
 version = "0.1.0"
-authors = ["Tripp Hill <thill@messerfinancial.com>"]
+authors = ["Tripp Hill <thilltbc@gmail.com>"]
 
 [dependencies]
 log = "0.3"
