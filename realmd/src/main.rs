@@ -1,15 +1,22 @@
 #[macro_use] extern crate log;
 extern crate simplelog;
 extern crate chrono;
+extern crate futures;
+#[macro_use] extern crate tokio_core;
+extern crate tokio_io;
 mod auth_types;
 mod logging;
-
+mod config;
+mod socket;
 fn main() {
+    info!("Hello, realm!");
 
     logging::setup_logging();
-    info!("Starting!");
     warn!("No Config Found!!");
-    println!("Hello, realm!");
+    let mango_config = config::MangoConfig{
+        database_string: "123:3306/db".to_string()
+    };
+    // warn!("Using default config: {:?}", &mangoConfig);
     let challenge = auth_types::AUTH_LOGON_CHALLENGE_C{
         cmd: 1,
         error: 0,
@@ -28,4 +35,6 @@ fn main() {
         I: 5
     };
     println!("Test Challenge: {:?}",challenge);
+    socket::listen();
+
 }

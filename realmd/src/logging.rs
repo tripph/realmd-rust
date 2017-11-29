@@ -16,9 +16,7 @@ fn init_logger() {
     let log_file = format!("logs/realmd-{}.log", current_time.timestamp());
     CombinedLogger::init(vec![
         TermLogger::new(LogLevelFilter::Warn, Config::default()).unwrap(),
-        TermLogger::new(LogLevelFilter::Debug, Config::default()).unwrap(),
         WriteLogger::new(LogLevelFilter::Info, Config::default(), File::create(&log_file).unwrap()),
-        WriteLogger::new(LogLevelFilter::Error, Config::default(), File::create(&log_file).unwrap()),
     ]
     ).unwrap();
 }
