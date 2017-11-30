@@ -1,11 +1,13 @@
 
 
-use std::{env, io};
+use std::{env, io, mem};
 use std::net::SocketAddr;
-
 use futures::{Future, Poll};
 use tokio_core::net::UdpSocket;
 use tokio_core::reactor::Core;
+
+use auth_types;
+
 struct Server {
     socket: UdpSocket,
     buf: Vec<u8>,
@@ -24,7 +26,14 @@ impl Future for Server {
             if let Some((size, peer)) = self.to_send {
                 let amt = try_nb!(self.socket.send_to(&self.buf[..size], &peer));
                 println!("Echoed {}/{} bytes to {}", amt, size, peer);
-                self.socket.send(&self.buf);
+                println!("First byte: {}", &self.buf[0]);
+                //let mut realPacket: Vec<u8> = self.buf[0..size].to_vec();
+                match self.buf[0] {
+                    1u8 => {
+                            handle_auth_logon_challenge(&self.buf);
+                        },
+                    _ => {}
+                };
                 self.to_send = None;
             }
 
@@ -34,13 +43,22 @@ impl Future for Server {
         }
     }
 }
+fn handle_auth_logon_challenge(buf: &Vec<u8>) {
+    println!("Header of packet: {:?}", &buf[0..3].to_vec());
+    let structSize = mem::size_of::<auth_types::AUTH_LOGON_CHALLENGE_C>();
+    if buf.len() !=  structSize {
+        warn!("Received packet and expected struct are different sizes! {} vs {}", buf.len(), structSize);
+    }
+    let mut challengePacket = auth_types::from_packet(&buf);
+    println!("packet: {:?}", &challengePacket);
+}
 pub fn listen() {
     // Create the event loop that will drive this server
     let mut core = Core::new().unwrap();
     let handle = core.handle();
 
     // Bind the server's socket
-    let addr = "192.168.1.18:12345".parse().unwrap();
+    let addr = "0.0.0.0:3724".parse().unwrap();
 
     let udp = UdpSocket::bind(&addr, &handle).unwrap();
 

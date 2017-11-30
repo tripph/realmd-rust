@@ -15,7 +15,7 @@ fn init_logger() {
     let current_time = Utc::now();
     let log_file = format!("logs/realmd-{}.log", current_time.timestamp());
     CombinedLogger::init(vec![
-        TermLogger::new(LogLevelFilter::Warn, Config::default()).unwrap(),
+        TermLogger::new(LogLevelFilter::Info, Config::default()).unwrap(),
         WriteLogger::new(LogLevelFilter::Info, Config::default(), File::create(&log_file).unwrap()),
     ]
     ).unwrap();

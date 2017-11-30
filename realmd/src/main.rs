@@ -17,7 +17,7 @@ fn main() {
         database_string: "123:3306/db".to_string()
     };
     // warn!("Using default config: {:?}", &mangoConfig);
-    let challenge = auth_types::AUTH_LOGON_CHALLENGE_C{
+    /*let challenge = auth_types::AUTH_LOGON_CHALLENGE_C{
         cmd: 1,
         error: 0,
         size: 0u16,
@@ -34,7 +34,7 @@ fn main() {
         I_len: 5u8,
         I: 5
     };
-    println!("Test Challenge: {:?}",challenge);
+    println!("Test Challenge: {:?}",challenge);*/
     socket::listen();
 
 }
