@@ -1,6 +1,6 @@
 
 
-use std::{env, io, mem};
+use std::{io, mem};
 use std::net::SocketAddr;
 use futures::{Future, Poll};
 use tokio_core::net::UdpSocket;
@@ -45,12 +45,12 @@ impl Future for Server {
 }
 fn handle_auth_logon_challenge(buf: &Vec<u8>) {
     println!("Header of packet: {:?}", &buf[0..3].to_vec());
-    let structSize = mem::size_of::<auth_types::AUTH_LOGON_CHALLENGE_C>();
-    if buf.len() !=  structSize {
-        warn!("Received packet and expected struct are different sizes! {} vs {}", buf.len(), structSize);
+    let struct_size = mem::size_of::<auth_types::AUTH_LOGON_CHALLENGE_C>();
+    if buf.len() !=  struct_size {
+        warn!("Received packet and expected struct are different sizes! {} vs {}", buf.len(), struct_size);
     }
-    let mut challengePacket = auth_types::from_packet(&buf);
-    println!("packet: {:?}", &challengePacket);
+    let  auth_logon_challenge = auth_types::from_packet(&buf);
+    println!("packet: {:?}", &auth_logon_challenge);
 }
 pub fn listen() {
     // Create the event loop that will drive this server
