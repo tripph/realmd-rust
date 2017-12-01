@@ -18,6 +18,26 @@ pub struct AUTH_LOGON_CHALLENGE_C {
     pub I_len: u8,
     pub I: [u8;1]
 }
+use std::fmt;
+impl fmt::Display for AUTH_LOGON_CHALLENGE_C {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+           "{{ \ncmd: {}\nerror: {}\n size: {}\n gamename: {}\n version1: {}\n version2: {}\n version3: {}\n\
+                 build: {}\n platform: {}\n os: {}\n country: {}\n timezone_bias: {}\n, ip: {}\n, I_len: {}\n, I: {}\n
+            }}"
+        ,self.cmd, self.error, self.size, create_string(self.gamename.to_vec()), self.version1, self.version2, self.version3,
+        self.build, create_string(self.platform.to_vec()), create_string(self.os.to_vec()), create_string(self.country.to_vec()),
+            self.timezone_bias, self.ip, self.I_len,create_string(self.I.to_vec())
+        )
+    }
+}
+fn create_string(input: Vec<u8>) -> String {
+    let mut output = String::new();
+    for inp in input.iter() {
+        output.push(*inp as char);
+    }
+    return output;
+}
 
 pub fn from_packet(packet: &Vec<u8>) -> AUTH_LOGON_CHALLENGE_C{
     AUTH_LOGON_CHALLENGE_C{

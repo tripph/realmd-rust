@@ -50,7 +50,7 @@ fn handle_auth_logon_challenge(buf: &Vec<u8>) {
         warn!("Received packet and expected struct are different sizes! {} vs {}", buf.len(), struct_size);
     }
     let  auth_logon_challenge = auth_types::from_packet(&buf);
-    println!("packet: {:?}", &auth_logon_challenge);
+    println!("packet: {}", &auth_logon_challenge);
 }
 pub fn listen() {
     // Create the event loop that will drive this server
