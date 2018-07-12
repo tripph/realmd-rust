@@ -1,6 +1,6 @@
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum AuthCmds {
     LogonChallenge = 0x00,
     LogonProof = 0x01,
@@ -13,6 +13,17 @@ pub enum AuthCmds {
     XferResume = 0x33,
     XferCancel = 0x34
 }
+
+impl AuthCmds {
+    pub fn from_u8(value: u8) -> AuthCmds {
+        match value {
+            0x00 => AuthCmds::LogonChallenge,
+            0x01 => AuthCmds::LogonProof,
+            _ => panic!("Unknown AuthCmd: {}", value)
+        }
+    }
+}
+
 pub enum AuthResults {
     Success = 0x00,
     FailUnknown0 = 0x01,

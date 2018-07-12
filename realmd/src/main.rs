@@ -3,20 +3,21 @@ use std::io::{Write,Read};
 mod auth_types;
 mod auth_codes;
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:3724").unwrap();
 
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
-                let mut buf = vec![0; 300];
-                stream.read(&mut buf);
-                match buf[0] {
+                let mut buf = vec![0; 0];
+                stream.read_to_end(&mut buf);
+                match auth_codes::AuthCmds::from_u8(buf[0]) {
                     auth_codes::AuthCmds::LogonChallenge => {
                         println!("Got cmd 0! Packet length: {}", buf.len());
-                        let auth = auth_types::from_packet(&buf);
-                        println!("auth: {}", auth);
-                    }
-                    0x01 => {
+                        let header = auth_types::getHeader(&buf);
+                        let challenge = auth_types::getLogonChallenge(&buf, header);
+                        println!("challenge: {}", challenge);
+                    },
+                    auth_codes::AuthCmds::LogonProof => {
 
                     }
                     _ => {
