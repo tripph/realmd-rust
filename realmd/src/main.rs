@@ -1,23 +1,33 @@
-#[macro_use] extern crate log;
-extern crate simplelog;
-extern crate chrono;
-extern crate futures;
-#[macro_use] extern crate tokio_core;
-extern crate tokio_io;
+use std::net::{TcpStream, TcpListener};
+use std::io::{Write,Read};
 mod auth_types;
-mod logging;
-mod config;
-mod socket;
+mod auth_codes;
 fn main() {
-    info!("Hello, realm!");
+    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
-    logging::setup_logging();
-   /* warn!("No Config Found!!");
-    let mango_config = config::MangoConfig{
-        database_string: "123:3306/db".to_string()
-    };*/
-    // warn!("Using default config: {:?}", &mangoConfig);
+    for stream in listener.incoming() {
+        match stream {
+            Ok(mut stream) => {
+                let mut buf = vec![0; 300];
+                stream.read(&mut buf);
+                match buf[0] {
+                    auth_codes::AuthCmds::LogonChallenge => {
+                        println!("Got cmd 0! Packet length: {}", buf.len());
+                        let auth = auth_types::from_packet(&buf);
+                        println!("auth: {}", auth);
+                    }
+                    0x01 => {
 
-    socket::listen();
-
+                    }
+                    _ => {
+                        println!("Got unknown cmd!");
+                    }
+                }
+                stream.write(&buf).expect("Response failed");
+            }
+            Err(e) => {
+                println!("Unable to connect: {}", e);
+            }
+        }
+    }
 }
