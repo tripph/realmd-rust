@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
@@ -30,10 +32,8 @@ pub struct AUTH_LOGON_CHALLENGE_C {
     pub timezone_bias: u32,
     pub ip: u32,
     pub I_len: u8,
-    pub I: Vec<u8>,
+    pub username: String,
 }
-
-use std::fmt;
 
 impl fmt::Display for AUTH_HEADER {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -49,7 +49,7 @@ impl fmt::Display for AUTH_LOGON_CHALLENGE_C {
             }}"
                , self.header, create_string(self.gamename.to_vec()), self.version1, self.version2, self.version3,
                self.build, create_string(self.platform.to_vec()), create_string(self.os.to_vec()), create_string(self.country.to_vec()),
-               self.timezone_bias, self.ip, self.I_len, create_string(self.I.to_vec())
+               self.timezone_bias, self.ip, self.I_len, self.username
         )
     }
 }
@@ -63,7 +63,8 @@ fn create_string(input: Vec<u8>) -> String {
 }
 
 // TODO: little-endian conversion, currently just reversing byte order?...
-pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER) -> AUTH_LOGON_CHALLENGE_C {
+pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER, length: usize) -> AUTH_LOGON_CHALLENGE_C {
+
     AUTH_LOGON_CHALLENGE_C {
         header: head,
         gamename: [packet[7], packet[6], packet[5], packet[4]],
@@ -75,9 +76,9 @@ pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER) -> AUTH_LOGON_CHA
         os: [packet[20], packet[19], packet[18], packet[17]],
         country: [packet[24], packet[23], packet[22], packet[21]],
         timezone_bias: as_u32_be(&packet[25..29]),
-        ip: 0 as u32,
-        I_len: 0,
-        I: vec![0],
+        ip: as_u32_be(&packet[30..34]),
+        I_len: packet[33],
+        username: std::str::from_utf8(&packet[34..length]).unwrap().to_string()
     }
 }
 
