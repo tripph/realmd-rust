@@ -63,8 +63,8 @@ fn create_string(input: Vec<u8>) -> String {
 }
 
 // TODO: little-endian conversion, currently just reversing byte order?...
-pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER, length: usize) -> AUTH_LOGON_CHALLENGE_C {
-
+pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER) -> AUTH_LOGON_CHALLENGE_C {
+    let username_offset: usize = 34+packet[33] as usize;
     AUTH_LOGON_CHALLENGE_C {
         header: head,
         gamename: [packet[7], packet[6], packet[5], packet[4]],
@@ -78,7 +78,7 @@ pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER, length: usize) ->
         timezone_bias: as_u32_be(&packet[25..29]),
         ip: as_u32_be(&packet[30..34]),
         I_len: packet[33],
-        username: std::str::from_utf8(&packet[34..length]).unwrap().to_string()
+        username: std::str::from_utf8(&packet[34..username_offset]).unwrap().to_string()
     }
 }
 

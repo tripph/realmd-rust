@@ -22,7 +22,7 @@ pub fn listen(pool: mysql::Pool) {
                             auth_types::AuthCmds::LogonChallenge => {
                                 println!("Got cmd 0!");
                                 let header = auth_types::getHeader(buf);
-                                let challenge = auth_types::getLogonChallenge(buf, header, byte_count);
+                                let challenge = auth_types::getLogonChallenge(buf, header);
                                 println!("challenge: {}", challenge);
                             }
                             auth_types::AuthCmds::LogonProof => {}
