@@ -5,6 +5,7 @@ authors = ["Tripp Hill <thilltbc@gmail.com>"]
 
 [dependencies]
 log = "0.3"
+mysql = "*"
 simplelog = "^0.4.3"
 chrono = "0.4.0"
 bytes = "0.4"
