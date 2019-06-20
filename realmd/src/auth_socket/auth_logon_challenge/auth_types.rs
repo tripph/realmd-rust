@@ -9,7 +9,7 @@ pub struct AUTH_HEADER {
     pub size: u16,
 }
 
-pub fn getHeader(packet: [u8; 256]) -> AUTH_HEADER {
+pub fn get_header(packet: &Vec<u8>) -> AUTH_HEADER {
     AUTH_HEADER {
         cmd: self::AuthCmds::from_u8(packet[0]),
         error: packet[1],
@@ -30,8 +30,8 @@ pub struct AUTH_LOGON_CHALLENGE_C {
     pub os: [u8; 4],
     pub country: [u8; 4],
     pub timezone_bias: u32,
-    pub ip: u32,
-    pub I_len: u8,
+    pub ip: [u8; 4],
+    pub username_len: u8,
     pub username: String,
 }
 
@@ -45,16 +45,16 @@ impl fmt::Display for AUTH_LOGON_CHALLENGE_C {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
                "{{ \nheader: {}\n gamename: {}\n version1: {}\n version2: {}\n version3: {}\n\
-                 build: {}\n platform: {}\n os: {}\n country: {}\n timezone_bias: {}\n, ip: {}\n, I_len: {}\n, I: {}\n
+                 build: {}\n platform: {}\n os: {}\n country: {}\n timezone_bias: {}\n, ip: {:?}\n, I_len: {}\n, I: {}\n
             }}"
-               , self.header, create_string(self.gamename.to_vec()), self.version1, self.version2, self.version3,
-               self.build, create_string(self.platform.to_vec()), create_string(self.os.to_vec()), create_string(self.country.to_vec()),
-               self.timezone_bias, self.ip, self.I_len, self.username
+               , self.header, create_string(&self.gamename.to_vec()), self.version1, self.version2, self.version3,
+               self.build, create_string(&self.platform.to_vec()), create_string(&self.os.to_vec()), create_string(&self.country.to_vec()),
+               self.timezone_bias, create_ip_string(&self.ip), self.username_len, self.username
         )
     }
 }
 
-fn create_string(input: Vec<u8>) -> String {
+fn create_string(input: &Vec<u8>) -> String {
     let mut output = String::new();
     for inp in input.iter() {
         output.push(*inp as char);
@@ -62,8 +62,12 @@ fn create_string(input: Vec<u8>) -> String {
     return output;
 }
 
+fn create_ip_string(input: &[u8; 4]) -> String {
+    return format!("{}.{}.{}.{}", input[0], input[1], input[2], input[3]);
+}
+
 // TODO: little-endian conversion, currently just reversing byte order?...
-pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER) -> AUTH_LOGON_CHALLENGE_C {
+pub fn get_logon_challenge(packet: &Vec<u8>, head: AUTH_HEADER) -> AUTH_LOGON_CHALLENGE_C {
     let username_offset: usize = 34+packet[33] as usize;
     AUTH_LOGON_CHALLENGE_C {
         header: head,
@@ -76,17 +80,17 @@ pub fn getLogonChallenge(packet: [u8; 256], head: AUTH_HEADER) -> AUTH_LOGON_CHA
         os: [packet[20], packet[19], packet[18], packet[17]],
         country: [packet[24], packet[23], packet[22], packet[21]],
         timezone_bias: as_u32_be(&packet[25..29]),
-        ip: as_u32_be(&packet[30..34]),
-        I_len: packet[33],
+        ip: [packet[29], packet[30], packet[31], packet[32]],
+        username_len: packet[33],
         username: std::str::from_utf8(&packet[34..username_offset]).unwrap().to_string()
     }
 }
 
 fn as_u32_be(array: &[u8]) -> u32 {
-    ((array[0] as u32) << 24) +
-        ((array[1] as u32) << 16) +
-        ((array[2] as u32) << 8) +
-        ((array[3] as u32) << 0)
+    ((array[3] as u32) << 24) +
+        ((array[2] as u32) << 16) +
+        ((array[1] as u32) << 8) +
+        ((array[0] as u32) << 0)
 }
 
 fn as_u32_le(array: &[u8]) -> u32 {
@@ -97,8 +101,8 @@ fn as_u32_le(array: &[u8]) -> u32 {
 }
 
 fn as_u16_be(array: &[u8]) -> u16 {
-    ((array[0] as u16) << 8) +
-        ((array[1] as u16) << 0)
+    ((array[1] as u16) << 8) +
+        ((array[0] as u16) << 0)
 }
 
 fn as_u16_le(array: &[u8]) -> u16 {
