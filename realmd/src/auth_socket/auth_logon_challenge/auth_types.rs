@@ -12,6 +12,17 @@ pub struct AUTH_HEADER {
     pub size: u16,
 }
 
+impl From<Vec<u8>> for AUTH_HEADER {
+    fn from(packet: Vec<u8>) -> Self {
+        AUTH_HEADER {
+            cmd: AuthCmds::from(packet[0]),
+            error: packet[1],
+            size: (packet[2] + packet[3]) as u16,
+
+        }
+    }
+}
+
 pub fn get_header(packet: &Vec<u8>, cmd: AuthCmds) -> AUTH_HEADER {
     AUTH_HEADER {
         cmd: cmd,
@@ -89,6 +100,28 @@ pub fn get_logon_challenge(packet: &Vec<u8>, head: AUTH_HEADER) -> AUTH_LOGON_CH
     }
 }
 
+impl From<Vec<u8>> for AUTH_LOGON_CHALLENGE_C {
+    fn from(p: Vec<u8>) -> Self {
+        let packet = p;
+        let username_offset: usize = 34 + packet[33] as usize;
+        AUTH_LOGON_CHALLENGE_C {
+            header: AUTH_HEADER::from(packet),
+            gamename: [packet[7], packet[6], packet[5], packet[4]],
+            version1: packet[8],
+            version2: packet[9],
+            version3: packet[10],
+            build: as_u16_be(&packet[11..13]),
+            platform: [packet[16], packet[15], packet[14], packet[13]],
+            os: [packet[20], packet[19], packet[18], packet[17]],
+            country: [packet[24], packet[23], packet[22], packet[21]],
+            timezone_bias: as_u32_be(&packet[25..29]),
+            ip: [packet[29], packet[30], packet[31], packet[32]],
+            username_len: packet[33],
+            username: std::str::from_utf8(&packet[34..username_offset]).unwrap().to_string(),
+        }
+    }
+}
+
 fn as_u32_be(array: &[u8]) -> u32 {
     ((array[3] as u32) << 24) +
         ((array[2] as u32) << 16) +
@@ -127,15 +160,28 @@ pub enum AuthCmds {
     XferAccept = 0x32,
     XferResume = 0x33,
     XferCancel = 0x34,
+    BadBadBad = 0x99 //fail
 }
 
-impl AuthCmds {
-    pub fn from_u8(value: &u8) -> Result<AuthCmds, &'static str> {
-        match value {
-            0x00 => Ok(AuthCmds::LogonChallenge),
-            0x01 => Ok(AuthCmds::LogonProof),
+//impl AuthCmds {
+//    pub fn from_u8(value: u8) -> Result<AuthCmds, &'static str> {
+//        match value {
+//            0x00 => Ok(AuthCmds::LogonChallenge),
+//            0x01 => Ok(AuthCmds::LogonProof),
+//            _ => {
+//                Err("Bad AuthCmd byte")
+//            }
+//        }
+//    }
+//}
+
+impl From<u8> for AuthCmds {
+    fn from(v: u8) -> Self {
+        match v {
+            0x00 => AuthCmds::LogonChallenge,
+            0x01 => AuthCmds::LogonProof,
             _ => {
-                Err("Bad AuthCmd byte")
+                AuthCmds::BadBadBad
             }
         }
     }
