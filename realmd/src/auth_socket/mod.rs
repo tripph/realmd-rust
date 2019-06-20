@@ -5,12 +5,10 @@ use simplelog::LogLevel::*;
 
 mod auth_logon_challenge;
 
-
 pub fn listen(pool: mysql::Pool) {
     let bind_address: &str = "127.0.0.1:3724";
     info!("Opening AuthSocket on {}", bind_address);
     let listener = TcpListener::bind(bind_address).unwrap();
-//    let pool = my::Pool::new("mysql://root:root@localhost:3306/realmd").unwrap();
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
@@ -21,14 +19,22 @@ pub fn listen(pool: mysql::Pool) {
                     Ok(byte_count) => {
                         println!("read {} bytes from {:?}", byte_count, stream.peer_addr().unwrap());
                         if (byte_count == 0) {}
-                        match auth_logon_challenge::auth_types::AuthCmds::from_u8(buf[0]) {
-                            auth_logon_challenge::auth_types::AuthCmds::LogonChallenge => {
-                                resp = auth_logon_challenge::handleAuthLogonChallenge(&buf);
+                        match auth_logon_challenge::auth_types::AuthCmds::from_u8(&buf[0]) {
+                            Ok(cmd) => {
+                                resp = match cmd {
+                                    auth_logon_challenge::auth_types::AuthCmds::LogonChallenge => {
+                                        auth_logon_challenge::handleAuthLogonChallenge(&buf, &cmd)
+                                    }
+                                    auth_logon_challenge::auth_types::AuthCmds::LogonProof => {
+                                        resp
+                                    }
+                                    _ => {
+                                        println!("Got unknown cmd!");
+                                        resp
+                                    }
+                                }
                             }
-                            auth_logon_challenge::auth_types::AuthCmds::LogonProof => {}
-                            _ => {
-                                println!("Got unknown cmd!");
-                            }
+                            Err(e) => eprintln!("Error parsing AuthCmd {}", e)
                         }
                     }
                     Err(err) => { eprintln!("{}", err) }

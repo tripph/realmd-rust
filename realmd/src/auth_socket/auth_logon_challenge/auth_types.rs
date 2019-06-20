@@ -1,4 +1,7 @@
+use std::error::Error;
 use std::fmt;
+
+use futures::future::Err;
 
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
@@ -9,9 +12,9 @@ pub struct AUTH_HEADER {
     pub size: u16,
 }
 
-pub fn get_header(packet: &Vec<u8>) -> AUTH_HEADER {
+pub fn get_header(packet: &Vec<u8>, cmd: AuthCmds) -> AUTH_HEADER {
     AUTH_HEADER {
-        cmd: self::AuthCmds::from_u8(packet[0]),
+        cmd: cmd,
         error: packet[1],
         size: (packet[2] + packet[3]) as u16,
 
@@ -68,7 +71,7 @@ fn create_ip_string(input: &[u8; 4]) -> String {
 
 // TODO: little-endian conversion, currently just reversing byte order?...
 pub fn get_logon_challenge(packet: &Vec<u8>, head: AUTH_HEADER) -> AUTH_LOGON_CHALLENGE_C {
-    let username_offset: usize = 34+packet[33] as usize;
+    let username_offset: usize = 34 + packet[33] as usize;
     AUTH_LOGON_CHALLENGE_C {
         header: head,
         gamename: [packet[7], packet[6], packet[5], packet[4]],
@@ -82,7 +85,7 @@ pub fn get_logon_challenge(packet: &Vec<u8>, head: AUTH_HEADER) -> AUTH_LOGON_CH
         timezone_bias: as_u32_be(&packet[25..29]),
         ip: [packet[29], packet[30], packet[31], packet[32]],
         username_len: packet[33],
-        username: std::str::from_utf8(&packet[34..username_offset]).unwrap().to_string()
+        username: std::str::from_utf8(&packet[34..username_offset]).unwrap().to_string(),
     }
 }
 
@@ -127,11 +130,13 @@ pub enum AuthCmds {
 }
 
 impl AuthCmds {
-    pub fn from_u8(value: u8) -> AuthCmds {
+    pub fn from_u8(value: &u8) -> Result<AuthCmds, &'static str> {
         match value {
-            0x00 => AuthCmds::LogonChallenge,
-            0x01 => AuthCmds::LogonProof,
-            _ => panic!("Unknown AuthCmd: {}", value)
+            0x00 => Ok(AuthCmds::LogonChallenge),
+            0x01 => Ok(AuthCmds::LogonProof),
+            _ => {
+                Err("Bad AuthCmd byte")
+            }
         }
     }
 }
