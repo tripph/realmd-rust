@@ -17,3 +17,6 @@ tokio-service = "0.1"
 byteorder = "1"
 srp = "0.4"
 rand = "0.6"
+sha1 = "0.6.0"
+num = "0.2"
+

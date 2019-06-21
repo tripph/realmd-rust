@@ -106,16 +106,13 @@ fn getAccount(username: String, pool: mysql::Pool) -> Result<Account, &'static s
     };
 }
 fn do_srp(account: &Account) {
-    use rand::prelude::*;
-    let mut rng = rand::thread_rng();
-    let mut b = [0u8; 64];
-    rng.fill_bytes(&mut b);
-    let user = UserRecord {
-        username: account.username,
-        salt: [],
-        verifier: []
-    };
-    let server = SrpServer::<Sha256>::new(&user, &a_pub, &b, &G_2048)?;
+    set_vs_fields(&account.sha_pass_hash);
+//    let user = UserRecord {
+//        username: account.username,
+//        salt: [],
+//        verifier: []
+//    };
+//    let server = SrpServer::<Sha256>::new(&user, &a_pub, &b, &G_2048)?;
     //                    ///- Don't calculate (v, s) if there are already some in the database
     //                    std::string databaseV = fields[4].GetCppString();
     //                    std::string databaseS = fields[5].GetCppString();
@@ -154,11 +151,25 @@ fn do_srp(account: &Account) {
 
     //
 }
-fn set_vs_fields(hashed_password: String) {
-    /// Make the SRP6 calculation from hash in dB
+fn set_vs_fields(hashed_password: &String) {
+    use num::bigint::BigInt;
+    use rand::prelude::*;
+    let mut rng = rand::thread_rng();
+    let mut b = [0u8; 64];
+    rng.fill_bytes(&mut b);
+    let N = num::BigInt::from_bytes_be(num::bigint::Sign::NoSign,"894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7".as_bytes());
+//    let N = &"".as_bytes();
+    let mut sha = sha1::Sha1::new();
+    sha.update(&b);
+    sha.update("0".as_bytes()); //todo: pull from account
+    sha.update(&hashed_password.as_bytes());
+
+
+
+    // Make the SRP6 calculation from hash in dB
 //    void AuthSocket::_SetVSFields(const std::string& rI)
 //    {
-//        s.SetRand(s_BYTE_SIZE * 8);
+//      [x]  s.SetRand(s_BYTE_SIZE * 8);
 //
 //        BigNumber I;
 //        I.SetHexStr(rI.c_str());
@@ -171,8 +182,8 @@ fn set_vs_fields(hashed_password: String) {
 //
 //        std::reverse(mDigest, mDigest + SHA_DIGEST_LENGTH);
 //
-//        Sha1Hash sha;
-//        sha.UpdateData(s.AsByteArray(), s.GetNumBytes());
+//     [x]   Sha1Hash sha;
+//     [x]   sha.UpdateData(s.AsByteArray(), s.GetNumBytes());
 //        sha.UpdateData(mDigest, SHA_DIGEST_LENGTH);
 //        sha.Finalize();
 //        BigNumber x;
