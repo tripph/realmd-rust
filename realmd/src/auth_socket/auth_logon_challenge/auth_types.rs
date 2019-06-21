@@ -2,8 +2,8 @@ use std::error::Error;
 use std::fmt;
 
 use futures::future::Err;
-use mysql::prelude::FromRow;
 use mysql::{FromRowError, Row};
+use mysql::prelude::FromRow;
 
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
@@ -215,7 +215,7 @@ pub enum AuthResults {
 
 pub struct Account {
     id: u32,
-    username: String,
+    pub username: String,
     pub sha_pass_hash: String,
     gmlevel: u8,
     sessionkey: String,

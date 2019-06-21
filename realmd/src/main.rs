@@ -5,6 +5,7 @@ extern crate futures;
 extern crate log;
 #[macro_use]
 extern crate mysql;
+extern crate rand;
 extern crate simplelog;
 extern crate srp;
 
