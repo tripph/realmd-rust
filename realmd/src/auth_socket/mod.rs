@@ -17,28 +17,28 @@ pub fn listen(pool: mysql::Pool) {
                 let bytes_read = stream.read_to_end(&mut buf);
                 match bytes_read {
                     Ok(byte_count) => {
-                        println!("read {} bytes from {:?}", byte_count, stream.peer_addr().unwrap());
+                        println!(
+                            "read {} bytes from {:?}",
+                            byte_count,
+                            stream.peer_addr().unwrap()
+                        );
                         if (byte_count == 0) {}
 
-                        resp = match auth_logon_challenge::auth_types::AuthCmds::from(buf[0]) {
+                        resp = match auth_logon_challenge::auth_types::AuthCmds::from(&buf[0]) {
                             auth_logon_challenge::auth_types::AuthCmds::LogonChallenge => {
-                                auth_logon_challenge::handleAuthLogonChallenge(buf)
+                                auth_logon_challenge::handleAuthLogonChallenge(buf, pool.clone())
                             }
-                            auth_logon_challenge::auth_types::AuthCmds::LogonProof => {
-                                resp
-                            }
+                            auth_logon_challenge::auth_types::AuthCmds::LogonProof => resp,
                             _ => {
                                 println!("Got unknown cmd!");
                                 resp
                             }
                         }
                     }
-                    Err(err) => { eprintln!("{}", err) }
+                    Err(err) => eprintln!("{}", err),
                 }
 
-                stream.
-                    write(&resp).
-                    expect("Response failed");
+                stream.write(&resp).expect("Response failed");
             }
             Err(e) => {
                 println!("Unable to connect: {}", e);
@@ -46,5 +46,3 @@ pub fn listen(pool: mysql::Pool) {
         }
     }
 }
-
-

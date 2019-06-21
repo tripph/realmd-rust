@@ -2,6 +2,8 @@ use std::error::Error;
 use std::fmt;
 
 use futures::future::Err;
+use mysql::prelude::FromRow;
+use mysql::{FromRowError, Row};
 
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
@@ -12,13 +14,12 @@ pub struct AUTH_HEADER {
     pub size: u16,
 }
 
-impl From<Vec<u8>> for AUTH_HEADER {
-    fn from(packet: Vec<u8>) -> Self {
+impl From<&Vec<u8>> for AUTH_HEADER {
+    fn from(packet: &Vec<u8>) -> Self {
         AUTH_HEADER {
-            cmd: AuthCmds::from(packet[0]),
+            cmd: AuthCmds::from(&packet[0]),
             error: packet[1],
             size: (packet[2] + packet[3]) as u16,
-
         }
     }
 }
@@ -28,7 +29,6 @@ pub fn get_header(packet: &Vec<u8>, cmd: AuthCmds) -> AUTH_HEADER {
         cmd: cmd,
         error: packet[1],
         size: (packet[2] + packet[3]) as u16,
-
     }
 }
 
@@ -51,7 +51,11 @@ pub struct AUTH_LOGON_CHALLENGE_C {
 
 impl fmt::Display for AUTH_HEADER {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\ncmd: {:?}\nerror: {}\n size: {}\n", self.cmd, self.error, self.size)
+        write!(
+            f,
+            "\ncmd: {:?}\nerror: {}\n size: {}\n",
+            self.cmd, self.error, self.size
+        )
     }
 }
 
@@ -96,16 +100,18 @@ pub fn get_logon_challenge(packet: &Vec<u8>, head: AUTH_HEADER) -> AUTH_LOGON_CH
         timezone_bias: as_u32_be(&packet[25..29]),
         ip: [packet[29], packet[30], packet[31], packet[32]],
         username_len: packet[33],
-        username: std::str::from_utf8(&packet[34..username_offset]).unwrap().to_string(),
+        username: std::str::from_utf8(&packet[34..username_offset])
+            .unwrap()
+            .to_string(),
     }
 }
 
 impl From<Vec<u8>> for AUTH_LOGON_CHALLENGE_C {
     fn from(p: Vec<u8>) -> Self {
-        let packet = p;
+        let packet = p.clone();
         let username_offset: usize = 34 + packet[33] as usize;
         AUTH_LOGON_CHALLENGE_C {
-            header: AUTH_HEADER::from(packet),
+            header: AUTH_HEADER::from(&packet),
             gamename: [packet[7], packet[6], packet[5], packet[4]],
             version1: packet[8],
             version2: packet[9],
@@ -117,33 +123,33 @@ impl From<Vec<u8>> for AUTH_LOGON_CHALLENGE_C {
             timezone_bias: as_u32_be(&packet[25..29]),
             ip: [packet[29], packet[30], packet[31], packet[32]],
             username_len: packet[33],
-            username: std::str::from_utf8(&packet[34..username_offset]).unwrap().to_string(),
+            username: std::str::from_utf8(&packet[34..username_offset])
+                .unwrap()
+                .to_string(),
         }
     }
 }
 
 fn as_u32_be(array: &[u8]) -> u32 {
-    ((array[3] as u32) << 24) +
-        ((array[2] as u32) << 16) +
-        ((array[1] as u32) << 8) +
-        ((array[0] as u32) << 0)
+    ((array[3] as u32) << 24)
+        + ((array[2] as u32) << 16)
+        + ((array[1] as u32) << 8)
+        + ((array[0] as u32) << 0)
 }
 
 fn as_u32_le(array: &[u8]) -> u32 {
-    ((array[0] as u32) << 0) +
-        ((array[1] as u32) << 8) +
-        ((array[2] as u32) << 16) +
-        ((array[3] as u32) << 24)
+    ((array[0] as u32) << 0)
+        + ((array[1] as u32) << 8)
+        + ((array[2] as u32) << 16)
+        + ((array[3] as u32) << 24)
 }
 
 fn as_u16_be(array: &[u8]) -> u16 {
-    ((array[1] as u16) << 8) +
-        ((array[0] as u16) << 0)
+    ((array[1] as u16) << 8) + ((array[0] as u16) << 0)
 }
 
 fn as_u16_le(array: &[u8]) -> u16 {
-    ((array[0] as u16) << 0) +
-        ((array[1] as u16) << 8)
+    ((array[0] as u16) << 0) + ((array[1] as u16) << 8)
 }
 
 #[allow(non_snake_case)]
@@ -160,7 +166,7 @@ pub enum AuthCmds {
     XferAccept = 0x32,
     XferResume = 0x33,
     XferCancel = 0x34,
-    BadBadBad = 0x99 //fail
+    BadBadBad = 0x99, //fail
 }
 
 //impl AuthCmds {
@@ -175,14 +181,12 @@ pub enum AuthCmds {
 //    }
 //}
 
-impl From<u8> for AuthCmds {
-    fn from(v: u8) -> Self {
+impl From<&u8> for AuthCmds {
+    fn from(v: &u8) -> Self {
         match v {
             0x00 => AuthCmds::LogonChallenge,
             0x01 => AuthCmds::LogonProof,
-            _ => {
-                AuthCmds::BadBadBad
-            }
+            _ => AuthCmds::BadBadBad,
         }
     }
 }
@@ -209,3 +213,60 @@ pub enum AuthResults {
     FailUseBattleNet = 0x12,
 }
 
+pub struct Account {
+    id: u32,
+    username: String,
+    pub sha_pass_hash: String,
+    gmlevel: u8,
+    sessionkey: String,
+    v: String,
+    s: String,
+    email: String,
+    joindate: mysql::Value,
+    // TODO: find why I can't just use a String here
+    last_ip: String,
+    failed_logins: u16,
+    locked: u8,
+    last_login: mysql::Value,
+    // TODO: find why I can't just use a String here
+    active_realm_id: u16,
+    expansion: u8,
+    mutetime: mysql::Value,
+    // TODO: find why I can't just use a String here
+    locale: u8,
+    os: String,
+    playerBot: mysql::Value, // TODO: find why I can't just use a String here
+}
+
+impl FromRow for Account {
+    fn from_row(row: Row) -> Account {
+        Account {
+            id: row.get(0).unwrap(),
+            username: row.get(1).unwrap(),
+            sha_pass_hash: row.get(2).unwrap(),
+            gmlevel: row.get(3).unwrap(),
+            sessionkey: row.get(4).unwrap(),
+            v: row.get(5).unwrap(),
+            s: row.get(6).unwrap(),
+            email: row.get(7).unwrap(),
+            joindate: row.get(8).unwrap(),
+            last_ip: row.get(9).unwrap(),
+            failed_logins: row.get(10).unwrap(),
+            locked: row.get(11).unwrap(),
+            last_login: row.get(12).unwrap(),
+            active_realm_id: row.get(13).unwrap(),
+            expansion: row.get(14).unwrap(),
+            mutetime: row.get(15).unwrap(),
+            locale: row.get(16).unwrap(),
+            os: row.get(17).unwrap(),
+            playerBot: row.get(18).unwrap(),
+        }
+    }
+
+    fn from_row_opt(row: Row) -> Result<Self, FromRowError>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
+    }
+}

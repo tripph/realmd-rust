@@ -1,8 +1,12 @@
 extern crate chrono;
+extern crate core;
 extern crate futures;
-#[macro_use] extern crate log;
-#[macro_use] extern crate mysql;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate mysql;
 extern crate simplelog;
+extern crate srp;
 
 mod auth_socket;
 mod db;
