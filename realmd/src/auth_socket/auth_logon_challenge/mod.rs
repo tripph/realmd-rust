@@ -1,10 +1,12 @@
 use core::borrow::Borrow;
 
-use mysql::prelude::FromRow;
+use mysql::prelude::{FromRow, Queryable};
 use srp::groups::G_2048;
 use srp::server::{SrpServer, UserRecord};
 
 use auth_socket::auth_logon_challenge::auth_types::{Account, AuthCmds};
+use mysql::Row;
+use std::ops::Deref;
 
 pub mod auth_types;
 
@@ -93,17 +95,8 @@ pub fn handleAuthLogonChallenge(buf: Vec<u8>, pool: mysql::Pool) -> Vec<u8> {
 }
 
 fn getAccount(username: String, pool: mysql::Pool) -> Result<Account, &'static str> {
-    let rowResult = pool
-        .prep_exec(
-            "SELECT * FROM account WHERE username = :username",
-            params! {"username" => username},
-        )
-        .unwrap()
-        .last();
-    return match rowResult.unwrap() {
-        Err(err) => Err("Coulldn't unwrap row result!"),
-        Ok(row) => Ok(Account::from_row(row)),
-    };
+    let r: Option<Row> = pool.get_conn().unwrap().query_first("SELECT * FROM account WHERE username = ".to_string() + &*username).unwrap();
+    return Ok(Account::from_row(r.expect("Couldn't unwrap row result!")));
 }
 fn do_srp(account: &Account) {
     set_vs_fields(&account.sha_pass_hash);

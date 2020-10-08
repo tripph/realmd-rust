@@ -22,7 +22,7 @@ pub fn listen(pool: mysql::Pool) {
                             byte_count,
                             stream.peer_addr().unwrap()
                         );
-                        if (byte_count == 0) {}
+                        if byte_count == 0 {}
 
                         resp = match auth_logon_challenge::auth_types::AuthCmds::from(&buf[0]) {
                             auth_logon_challenge::auth_types::AuthCmds::LogonChallenge => {
